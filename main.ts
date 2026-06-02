@@ -65,6 +65,13 @@ const setTargetJid = (jid: string) => {
   _targetJid = jid;
 };
 
+const getWebServerPort = (): number => {
+  const fallbackPort = 3000;
+  const port = Number(process.env.PORT ?? fallbackPort);
+
+  return Number.isInteger(port) && port > 0 ? port : fallbackPort;
+};
+
 const broadcastStatus = (): void => {
   void _webServer?.broadcastStatus();
 };
@@ -250,7 +257,7 @@ const bootstrap = async () => {
   });
 
   _webServer = makeWebServer({
-    port: 3000,
+    port: getWebServerPort(),
     cronService: _cronService,
     cronScheduler: _cronScheduler,
     messageStore: _messageStore,

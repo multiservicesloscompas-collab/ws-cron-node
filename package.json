@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "node --env-file=.env --watch --import tsx ./main.ts",
-    "build": "esbuild main.ts --bundle --platform=node --outfile=dist/main.js --format=esm --loader:.ts=text --external:#test-assert",
+    "build": "rm -rf dist && esbuild main.ts --bundle --platform=node --packages=external --outfile=dist/main.js --format=esm && cp app/web/web-ui.html dist/web-ui.html",
     "start": "node ./dist/main.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -20,7 +20,7 @@
     "@cacheable/node-cache": "^1.7.6",
     "@google/genai": "^2.4.0",
     "@supabase/supabase-js": "^2.0.0",
-    "baileys": "7.0.0-rc11",
+    "baileys": "7.0.0-rc13",
     "pg": "^8.16.3",
     "pg-mem": "^3.0.5",
     "qrcode": "^1.5.4",

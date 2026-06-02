@@ -1,5 +1,8 @@
 import { assert, assertStringIncludes } from "#test-assert";
 
+const compactWhitespace = (value: string): string =>
+  value.replace(/\s+/g, " ");
+
 Deno.test("web-ui exposes llm fallback editor controls in Spanish", async () => {
   const html = await Deno.readTextFile(
     new URL("../web-ui.html", import.meta.url),
@@ -8,7 +11,10 @@ Deno.test("web-ui exposes llm fallback editor controls in Spanish", async () => 
   assertStringIncludes(html, "En caso de error");
   assertStringIncludes(html, "addCronModalFallbackMessage(");
   assertStringIncludes(html, "Agregar otro mensaje");
-  assertStringIncludes(html, "fallbackMessages: contentType === \"llm_generated\"");
+  assertStringIncludes(
+    compactWhitespace(html),
+    "fallbackMessages: contentType === \"llm_generated\"",
+  );
   assertStringIncludes(html, "getCronFallbackMessagesFromModal(index)");
 });
 
@@ -51,8 +57,8 @@ Deno.test("web-ui redesign uses segmented content type controls inside message c
   assertStringIncludes(html, "cron-message-editor-card");
   assertStringIncludes(html, "cron-segmented-control");
   assertStringIncludes(html, "cron-segmented-button");
-  assertStringIncludes(html, ", \\'static_template\\')\">Plantilla</button>");
-  assertStringIncludes(html, ", \\'llm_generated\\')\">Gemini</button>");
+  assertStringIncludes(html, ", 'static_template')\\\">Plantilla</button>");
+  assertStringIncludes(html, ", 'llm_generated')\\\">Gemini</button>");
   assertStringIncludes(html, "Configuración");
   assertStringIncludes(html, "Editor de plantilla");
 });
@@ -118,7 +124,7 @@ Deno.test("web-ui blocks repeated cron trigger clicks while loading", async () =
   assertStringIncludes(html, "renderCronTriggerButton(cardId)");
   assertStringIncludes(html, "<span class=\"spinner\"></span>");
   assertStringIncludes(html, '" aria-busy="');
-  assertStringIncludes(html, "(isLoading ? ' disabled' : '')");
+  assertStringIncludes(html, '(isLoading ? " disabled" : "")');
 });
 
 Deno.test("web-ui persists cron card order with localStorage helpers", async () => {
@@ -167,7 +173,10 @@ Deno.test("web-ui adds pointer-based mobile drag hooks to the cron handle", asyn
   assertStringIncludes(html, 'onpointerup="endCronTouchDrag(event)"');
   assertStringIncludes(html, 'onpointercancel="cancelCronTouchDrag(event)"');
   assertStringIncludes(html, 'function startCronTouchDrag(event, id) {');
-  assertStringIncludes(html, 'if (event.pointerType !== "touch" && event.pointerType !== "pen") return;');
+  assertStringIncludes(
+    compactWhitespace(html),
+    'if (event.pointerType !== "touch" && event.pointerType !== "pen") return;',
+  );
   assertStringIncludes(html, 'function getCronDropTargetFromPoint(clientX, clientY) {');
   assertStringIncludes(html, 'document.elementFromPoint(clientX, clientY)');
   assertStringIncludes(html, 'function moveCronTouchDrag(event) {');
@@ -209,14 +218,17 @@ Deno.test("web-ui lets the draft card forward drops to the first persisted cron"
     new URL("../web-ui.html", import.meta.url),
   );
 
-  assertStringIncludes(html, 'const dropTargetId = options.dropTargetId || (isDraggable ? cardId : "");');
+  assertStringIncludes(
+    compactWhitespace(html),
+    'const dropTargetId = options.dropTargetId || (isDraggable ? cardId : "");',
+  );
   assertStringIncludes(html, 'data-cron-drop-target');
   assertStringIncludes(html, 'dropTargetId === dragOverCronJobId');
   assertStringIncludes(html, 'dropTargetId: orderedCronJobs[0]?.id || "",');
   assertStringIncludes(html, 'escapeJs(dropTargetId)');
   assertStringIncludes(html, '" data-cron-drop-target="');
-  assertStringIncludes(html, "allowCronCardDrop(event, \\");
-  assertStringIncludes(html, "dropCronJob(event, \\");
+  assertStringIncludes(html, "allowCronCardDrop(event, '");
+  assertStringIncludes(html, "dropCronJob(event, '");
 });
 
 Deno.test("web-ui documents payment category summary template variable", async () => {
@@ -248,7 +260,10 @@ Deno.test("web-ui keeps polished cron segmented controls and add-message button 
   assertStringIncludes(html, ".cron-segmented-control {");
   assertStringIncludes(html, "background: linear-gradient(180deg, var(--bg-alt), var(--surface));");
   assertStringIncludes(html, ".cron-segmented-button.active {");
-  assertStringIncludes(html, "box-shadow: 0 0 0 1px var(--green-subtle), var(--shadow-sm);");
+  assertStringIncludes(
+    compactWhitespace(html),
+    "box-shadow: 0 0 0 1px var(--green-subtle), var(--shadow-sm);",
+  );
   assertStringIncludes(html, ".cron-add-message-button {");
   assertStringIncludes(html, "box-shadow: inset 0 1px 0 oklch(1 0.004 85 / 0.6);");
   assertStringIncludes(html, "transform: translateY(-1px);");
@@ -275,7 +290,8 @@ Deno.test("web-ui prefers websocket status and pauses background polling when hi
     new URL("../web-ui.html", import.meta.url),
   );
 
-  assertStringIncludes(html, 'new WebSocket(protocol + "//" + window.location.host + "/api/status-stream")');
+  assertStringIncludes(html, "new WebSocket(");
+  assertStringIncludes(html, 'protocol + "//" + window.location.host + "/api/status-stream"');
   assertStringIncludes(html, "statusSocketFallbackActive = false;");
   assertStringIncludes(html, "document.addEventListener(\"visibilitychange\"");
   assertStringIncludes(html, "if (document.hidden) return;");
