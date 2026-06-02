@@ -83,6 +83,8 @@ export interface WebServerDeps {
     messageKey: { id: string; remoteJid: string; fromMe: boolean },
     messageContent: Record<string, unknown>,
   ) => Promise<Uint8Array | null>;
+  /** Unlink current WhatsApp session */
+  unlinkWhatsAppSession: () => Promise<Result<WhatsAppSessionState, string>>;
   /** Path to HTML frontend file (default: relative to this file) */
   htmlPath?: string;
 }
@@ -185,6 +187,20 @@ export const makeWebServer = (deps: WebServerDeps): WebServer => {
         });
 
         return corsHeaders(successResponse({ ...status }));
+      }
+
+      if (method === "POST" && path === "/api/whatsapp/unlink") {
+        const result = await deps.unlinkWhatsAppSession();
+
+        if (isFailure(result)) {
+          return corsHeaders(errorResponse(result.getError()));
+        }
+
+        await statusChannel.broadcast();
+        return corsHeaders(successResponse({
+          message: "Sesión de WhatsApp desvinculada correctamente.",
+          session: result.getValue(),
+        }));
       }
 
       const contactsResponse = await handleContactsRequest(req, path, {

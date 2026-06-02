@@ -282,6 +282,13 @@ const bootstrap = async () => {
     systemContactSync: _systemContactSync,
     getOwnJid: () => _client ? _client.getOwnJid() : "",
     downloadMedia: (key, content) => mediaDownloader.download(key, content),
+    unlinkWhatsAppSession: async () => {
+      if (!_client) {
+        return failure("No hay una sesión activa de WhatsApp para desvincular.");
+      }
+
+      return _client.unlink();
+    },
   });
 
   await _webServer.start();

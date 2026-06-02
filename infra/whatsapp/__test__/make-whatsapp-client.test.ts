@@ -31,7 +31,10 @@ const createFakeSocket = (): FakeSocket => {
         if (!listeners[event]) listeners[event] = []
         listeners[event].push(handler)
       },
-      removeListener: () => {},
+      removeListener: (event: string, handler: (...args: any[]) => void) => {
+        if (!listeners[event]) return
+        listeners[event] = listeners[event].filter((entry) => entry !== handler)
+      },
     },
     end: (_input?: unknown) => {},
     _emit: (event: string, data: any) => {
@@ -703,4 +706,117 @@ Deno.test('16. onSessionStateChange receives connection updates', async () => {
 
   assertEquals(phases.includes('reconnecting'), true)
   assertEquals(phases.includes('connected'), true)
+})
+
+Deno.test('17. unlink() logs out, clears auth, ends current socket and creates one fresh QR socket', async () => {
+  const firstSocket = createFakeSocket()
+  const secondSocket = createFakeSocket()
+  const sockets = [firstSocket, secondSocket]
+  const capturedTimeouts: Array<{ delay: number; callback: TimeoutCallback }> = []
+  const events: string[] = []
+  const orig = captureSetTimeout(capturedTimeouts)
+
+  firstSocket.end = () => {
+    events.push('end:first')
+  }
+
+  ;(firstSocket as FakeSocket & { logout: () => Promise<void> }).logout = async () => {
+    events.push('logout:first')
+  }
+
+  try {
+    const client = makeWhatsAppClient({
+      authFolder: 'test_auth',
+      makeWASocket: () => {
+        const nextSocket = sockets.shift()
+        if (!nextSocket) throw new Error('No fake socket available')
+        events.push(`create:${nextSocket === firstSocket ? 'first' : 'second'}`)
+        return nextSocket
+      },
+      loadAuthState: async () => makeInjectedAuthState(),
+      useMultiFileAuthState: async () => ({
+        state: {},
+        saveCreds: async () => {},
+      }),
+      DisconnectReason: DISCONNECT_REASON,
+      clearAuthState: async (folder) => {
+        events.push(`clear-auth:${folder}`)
+      },
+      qrCode: QR_CODE_BINDINGS,
+    })
+
+    await client.start()
+    firstSocket.user = { id: '584129833320:12@s.whatsapp.net' }
+    firstSocket._emit('connection.update', { connection: 'open' })
+
+    const result = await client.unlink()
+
+    assertEquals(result.isFailure, false)
+    assertEquals(events, [
+      'create:first',
+      'logout:first',
+      'end:first',
+      'clear-auth:test_auth',
+      'create:second',
+    ])
+    assertEquals(capturedTimeouts.length, 0)
+    assertEquals(client.getSocket(), secondSocket)
+    assertEquals(client.getOwnJid(), '')
+
+    secondSocket._emit('connection.update', { qr: 'unlink-fresh-qr' })
+    await waitFor(() => client.getSessionState().qrDataUrl !== null)
+
+    assertEquals(client.getConnectionStatus(), 'loggedOut')
+    assertEquals(client.getSessionState().phase, 'qr_pending')
+    assertEquals(client.getSessionState().qrDataUrl, 'data:image/png;base64,unlink-fresh-qr')
+  } finally {
+    restoreSetTimeout(orig)
+  }
+})
+
+Deno.test('18. unlink() ignores stale QR events from the retired socket', async () => {
+  const firstSocket = createFakeSocket()
+  const secondSocket = createFakeSocket()
+  const sockets = [firstSocket, secondSocket]
+  const events: string[] = []
+
+  ;(firstSocket as FakeSocket & { logout: () => Promise<void> }).logout = async () => {}
+
+  const client = makeWhatsAppClient({
+    authFolder: 'test_auth',
+    makeWASocket: () => {
+      const nextSocket = sockets.shift()
+      if (!nextSocket) throw new Error('No fake socket available')
+      events.push(nextSocket === firstSocket ? 'create:first' : 'create:second')
+      return nextSocket
+    },
+    loadAuthState: async () => makeInjectedAuthState(),
+    useMultiFileAuthState: async () => ({
+      state: {},
+      saveCreds: async () => {},
+    }),
+    DisconnectReason: DISCONNECT_REASON,
+    clearAuthState: async () => {},
+    qrCode: QR_CODE_BINDINGS,
+  })
+
+  await client.start()
+  firstSocket.user = { id: '584129833320:12@s.whatsapp.net' }
+  firstSocket._emit('connection.update', { connection: 'open' })
+  await client.unlink()
+
+  assertEquals(events, ['create:first', 'create:second'])
+  assertEquals(client.getSocket(), secondSocket)
+
+  firstSocket._emit('connection.update', { qr: 'stale-qr' })
+  await flushMicrotasks()
+
+  assertEquals(client.getSessionState().qr, null)
+  assertEquals(client.getSessionState().qrDataUrl, null)
+
+  secondSocket._emit('connection.update', { qr: 'fresh-qr' })
+  await waitFor(() => client.getSessionState().qr === 'fresh-qr')
+
+  assertEquals(client.getSessionState().qr, 'fresh-qr')
+  assertEquals(client.getSessionState().qrDataUrl, 'data:image/png;base64,fresh-qr')
 })

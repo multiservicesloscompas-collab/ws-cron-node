@@ -1,47 +1,32 @@
 import { rm } from 'node:fs/promises'
+import { failure, success, type Result } from '../../types/result.ts'
 import type { PostgresQueryable } from '../postgres/postgres-types.ts'
-import type { ConnectionStatus, WhatsAppSessionState } from './whatsapp-types.ts'
+import type {
+  ConnectionStatus,
+  WhatsAppClient,
+  WhatsAppSessionState,
+} from './whatsapp-types.ts'
 import {
   loadDefaultBindings,
-  loadQRCode,
   type BaileysBindings,
   type QRCodeBindings,
   type WASocket,
 } from './baileys-bindings.ts'
 import type { ManagedWhatsAppAuthState, WhatsAppAuthState } from './whatsapp-auth-state.ts'
-
-const encodeSvgDataUrl = (svg: string): string =>
-  `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+import { makeWhatsAppConnectionUpdateHandler } from './make-whatsapp-connection-update-handler.ts'
+import {
+  clearQrSession,
+  createSessionState,
+  nowIso,
+} from './whatsapp-session-state.ts'
 
 const normalizeOwnJid = (jid: string): string => jid.replace(/:\d+@/, '@')
 
-const nowIso = (): string => new Date().toISOString()
+const isNodeError = (error: unknown): error is NodeJS.ErrnoException =>
+  error instanceof Error
 
-const createSessionState = (
-  overrides: Partial<WhatsAppSessionState> = {},
-): WhatsAppSessionState => ({
-  connectionStatus: 'closed',
-  phase: 'disconnected',
-  requiresUserAction: false,
-  canAutoReconnect: false,
-  reconnectAttempt: 0,
-  nextReconnectDelayMs: null,
-  qr: null,
-  qrDataUrl: null,
-  qrGeneratedAt: null,
-  lastDisconnectCode: null,
-  updatedAt: nowIso(),
-  ...overrides,
-})
-
-export interface WhatsAppClient {
-  start: () => Promise<void>
-  stop: () => Promise<void>
-  getSocket: () => WASocket | null
-  getConnectionStatus: () => ConnectionStatus
-  getSessionState: () => WhatsAppSessionState
-  getOwnJid: () => string
-}
+const toErrorMessage = (error: unknown, fallback: string): string =>
+  error instanceof Error && error.message ? error.message : fallback
 
 export type SessionStateListener = (session: WhatsAppSessionState) => void
 
@@ -56,8 +41,6 @@ export interface MakeWhatsAppClientConfig extends Partial<BaileysBindings> {
   useMultiFileAuthState?: (folder: string) => Promise<{ state: unknown; saveCreds: () => Promise<void> }>
 }
 
-const clearQrSession = (): Partial<WhatsAppSessionState> => ({ qr: null, qrDataUrl: null, qrGeneratedAt: null })
-
 export const makeWhatsAppClientCore = (
   config: MakeWhatsAppClientConfig,
 ): WhatsAppClient => {
@@ -68,11 +51,15 @@ export const makeWhatsAppClientCore = (
   let reconnectAttempts = 0
   let reconnectTimer: NodeJS.Timeout | null = null
   let isStopping = false
+  let isManualUnlinking = false
   let bindings: BaileysBindings | null = null
   let ownJid = ''
   let session = createSessionState()
   let relinkAttemptScheduled = false
   let authState: ManagedWhatsAppAuthState | null = null
+  let retireSocketEvents: (() => void) | null = null
+  let cleanupSocketListeners: (() => void) | null = null
+  let socketGeneration = 0
 
   const updateSession = (next: Partial<WhatsAppSessionState>): WhatsAppSessionState => {
     session = {
@@ -83,8 +70,13 @@ export const makeWhatsAppClientCore = (
     }
 
     config.onSessionStateChange?.({ ...session })
-
     return session
+  }
+
+  const cancelReconnectTimer = (): void => {
+    if (reconnectTimer === null) return
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
   }
 
   const clearAuthState = async (): Promise<void> => {
@@ -101,7 +93,7 @@ export const makeWhatsAppClientCore = (
     try {
       await rm(authFolder, { recursive: true, force: true })
     } catch (error) {
-      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return
+      if (isNodeError(error) && error.code === 'ENOENT') return
       throw error
     }
   }
@@ -124,7 +116,7 @@ export const makeWhatsAppClientCore = (
           }
         },
       }
-      return bindings as BaileysBindings
+      return bindings
     }
 
     if (config.makeWASocket && config.loadAuthState && config.DisconnectReason) {
@@ -133,217 +125,177 @@ export const makeWhatsAppClientCore = (
         loadAuthState: config.loadAuthState,
         DisconnectReason: config.DisconnectReason,
       }
-      return bindings as BaileysBindings
+      return bindings
     }
 
     bindings = await loadDefaultBindings()
     return bindings
   }
 
+  const scheduleReconnect = (delay: number, createSocket: () => Promise<void>): void => {
+    cancelReconnectTimer()
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null
+      return createSocket()
+    }, delay)
+  }
+
   const createSocket = async (): Promise<void> => {
     const b = await resolveBindings()
     authState = await b.loadAuthState({ authFolder, database: config.database })
 
-    socket = b.makeWASocket({
+    const nextSocket = b.makeWASocket({
       auth: authState.state,
       qrTimeout: 120_000,
     })
+    let isCurrentSocket = true
+    const currentGeneration = ++socketGeneration
+
+    const handleCredsUpdate = authState.saveCreds
+
+    socket = nextSocket
+    retireSocketEvents = () => {
+      isCurrentSocket = false
+    }
     updateSession({ nextReconnectDelayMs: null })
-    config.onSocket?.(socket)
+    config.onSocket?.(nextSocket)
 
     const syncOwnJid = (): void => {
-      const jid = socket?.user?.id
+      const jid = nextSocket.user?.id
       if (!jid) return
       ownJid = normalizeOwnJid(jid)
     }
 
-    syncOwnJid()
-    socket.ev.on('creds.update', authState.saveCreds)
-
-    socket.ev.on('connection.update', (update: Record<string, unknown>) => {
-      const connection = update.connection as string | undefined
-      const qr = update.qr as string | undefined
-      const lastDisconnect = update.lastDisconnect as
-        | { error?: { output?: { statusCode?: number } } }
-        | undefined
-      const disconnectCode = lastDisconnect?.error?.output?.statusCode ?? null
-
-      if (qr) {
-        status = status === 'loggedOut' ? 'loggedOut' : 'connecting'
-        const qrGeneratedAt = nowIso()
-        updateSession({
-          phase: 'qr_pending',
-          requiresUserAction: true,
-          canAutoReconnect: false,
-          reconnectAttempt: 0,
-          nextReconnectDelayMs: null,
-          qr,
-          qrDataUrl: null,
-          qrGeneratedAt,
-          lastDisconnectCode: disconnectCode,
-        })
-
-        console.log('\n═══════════════════════════════════════════')
-        console.log('  ESCANEA ESTE QR CON WHATSAPP EN TU CELULAR')
-        console.log('  (WhatsApp → Dispositivos vinculados)')
-        console.log('═══════════════════════════════════════════\n')
-
-        const qrCodeLoader = config.qrCode ? Promise.resolve(config.qrCode) : loadQRCode()
-
-        qrCodeLoader
-          .then((qrCode) => qrCode.toString(qr, { type: 'terminal', small: true }))
-          .then((qrAscii: string) => console.log(qrAscii))
-          .catch(() => console.log(qr))
-
-        qrCodeLoader
-          .then((qrCode) => qrCode.toDataURL(qr))
-          .then((qrDataUrl) => {
-            updateSession({
-              phase: 'qr_pending',
-              requiresUserAction: true,
-              canAutoReconnect: false,
-              qr,
-              qrDataUrl,
-              qrGeneratedAt,
-              lastDisconnectCode: disconnectCode,
-            })
-          })
-          .catch(async () => {
-            const fallbackQrDataUrl = await qrCodeLoader
-              .then((qrCode) => qrCode.toString(qr, { type: 'svg' }))
-              .then(encodeSvgDataUrl)
-              .catch(() => null)
-
-            updateSession({
-              phase: 'qr_pending',
-              requiresUserAction: true,
-              canAutoReconnect: false,
-              qr,
-              qrDataUrl: fallbackQrDataUrl,
-              qrGeneratedAt,
-              lastDisconnectCode: disconnectCode,
-            })
-          })
-
-        console.log('\n═══════════════════════════════════════════\n')
-        relinkAttemptScheduled = false
-      }
-
-      if (connection === 'connecting') {
-        status = 'connecting'
-        const phase = session.requiresUserAction
-          ? (session.qr ? 'qr_pending' : 'relink_required')
-          : 'reconnecting'
-        updateSession({
-          phase,
-          canAutoReconnect: !session.requiresUserAction,
-          nextReconnectDelayMs: null,
-        })
-      } else if (connection === 'open') {
-        syncOwnJid()
-        status = 'open'
+    const handleConnectionUpdate = makeWhatsAppConnectionUpdateHandler({
+      nextSocket,
+      qrCode: config.qrCode,
+      isStopping: () => isStopping,
+      isManualUnlinking: () => isManualUnlinking,
+      isActiveSocket: () => isCurrentSocket && socket === nextSocket && currentGeneration === socketGeneration,
+      getStatus: () => status,
+      setStatus: (nextStatus) => {
+        status = nextStatus
+      },
+      getSession: () => session,
+      updateSession,
+      syncOwnJid,
+      resetReconnectAttempts: () => {
         reconnectAttempts = 0
-        relinkAttemptScheduled = false
-        updateSession({
-          phase: 'connected',
-          requiresUserAction: false,
-          canAutoReconnect: false,
-          reconnectAttempt: 0,
-          nextReconnectDelayMs: null,
-          lastDisconnectCode: null,
-          ...clearQrSession(),
-        })
-        config.onConnectionOpen?.(ownJid)
-      } else if (connection === 'close') {
-        if (isStopping) return
+      },
+      incrementReconnectAttempts: () => {
+        reconnectAttempts += 1
+        return reconnectAttempts
+      },
+      setRelinkAttemptScheduled: (value) => {
+        relinkAttemptScheduled = value
+      },
+      onConnectionOpen: config.onConnectionOpen,
+      getOwnJid: () => ownJid,
+      loggedOutCode: b.DisconnectReason.loggedOut,
+      scheduleReconnect,
+      clearAuthState,
+      createSocket,
+    })
 
-        const isLoggedOut =
-          lastDisconnect?.error?.output?.statusCode === b.DisconnectReason.loggedOut
+    cleanupSocketListeners = () => {
+      nextSocket.ev.removeListener?.('creds.update', handleCredsUpdate)
+      nextSocket.ev.removeListener?.('connection.update', handleConnectionUpdate)
+    }
 
-        if (isLoggedOut) {
-          status = 'loggedOut'
-          reconnectAttempts = 0
-          updateSession({
-            phase: 'relink_required',
-            requiresUserAction: true,
-            canAutoReconnect: false,
-            reconnectAttempt: 0,
-            nextReconnectDelayMs: null,
-            lastDisconnectCode: disconnectCode,
-            ...clearQrSession(),
-          })
+    syncOwnJid()
+    nextSocket.ev.on('creds.update', handleCredsUpdate)
+    nextSocket.ev.on('connection.update', handleConnectionUpdate)
+  }
 
-          if (!relinkAttemptScheduled) {
-            relinkAttemptScheduled = true
-            reconnectTimer = setTimeout(async () => {
-              reconnectTimer = null
+  const stop = async (): Promise<void> => {
+    isStopping = true
+    cancelReconnectTimer()
 
-              try {
-                relinkAttemptScheduled = false
-                await clearAuthState()
-                await createSocket()
-              } catch (error) {
-                console.error(
-                  'No se pudo limpiar la sesión de WhatsApp para re-vincular.',
-                  error,
-                )
-              }
-            }, 1000)
-          }
-          return
-        }
+    if (socket) {
+      const activeSocket = socket
+      socket = null
+      socketGeneration++
+      retireSocketEvents?.()
+      retireSocketEvents = null
+      cleanupSocketListeners?.()
+      cleanupSocketListeners = null
+      activeSocket.end(undefined)
+    }
 
-        status = 'closed'
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30_000)
-        reconnectAttempts++
-        updateSession({
-          phase: 'reconnecting',
-          requiresUserAction: false,
-          canAutoReconnect: true,
-          reconnectAttempt: reconnectAttempts,
-          nextReconnectDelayMs: delay,
-          lastDisconnectCode: disconnectCode,
-          ...clearQrSession(),
-        })
-        reconnectTimer = setTimeout(() => {
-          reconnectTimer = null
-          return createSocket()
-        }, delay)
-      }
+    status = 'closed'
+    ownJid = ''
+    reconnectAttempts = 0
+    relinkAttemptScheduled = false
+    updateSession({
+      phase: 'disconnected',
+      requiresUserAction: false,
+      canAutoReconnect: false,
+      reconnectAttempt: 0,
+      nextReconnectDelayMs: null,
+      lastDisconnectCode: null,
+      ...clearQrSession(),
     })
   }
 
-  return {
-    start: async () => {
-      await createSocket()
-    },
-    stop: async () => {
-      isStopping = true
+  const unlink = async (): Promise<Result<WhatsAppSessionState, string>> => {
+    if (!socket || session.phase !== 'connected') {
+      return failure('No hay una sesión activa de WhatsApp para desvincular.')
+    }
 
-      if (reconnectTimer !== null) {
-        clearTimeout(reconnectTimer)
-        reconnectTimer = null
-      }
+    const activeSocket = socket
+    isManualUnlinking = true
+    cancelReconnectTimer()
+    socket = null
+    socketGeneration++
+    retireSocketEvents?.()
+    retireSocketEvents = null
+    cleanupSocketListeners?.()
+    cleanupSocketListeners = null
 
-      if (socket) {
-        socket.end(undefined)
-        socket = null
-      }
+    try {
+      await activeSocket.logout?.()
+      activeSocket.end(undefined)
+      await clearAuthState()
 
-      status = 'closed'
       ownJid = ''
       reconnectAttempts = 0
       relinkAttemptScheduled = false
+      status = 'loggedOut'
       updateSession({
-        phase: 'disconnected',
-        requiresUserAction: false,
+        phase: 'relink_required',
+        requiresUserAction: true,
         canAutoReconnect: false,
         reconnectAttempt: 0,
         nextReconnectDelayMs: null,
         lastDisconnectCode: null,
         ...clearQrSession(),
       })
+
+      await createSocket()
+      return success({ ...session })
+    } catch (error) {
+      status = 'closed'
+      socket = null
+      updateSession({
+        phase: 'disconnected',
+        requiresUserAction: false,
+        canAutoReconnect: false,
+        reconnectAttempt: 0,
+        nextReconnectDelayMs: null,
+        ...clearQrSession(),
+      })
+      return failure(toErrorMessage(error, 'No se pudo desvincular la sesión de WhatsApp.'))
+    } finally {
+      isManualUnlinking = false
+    }
+  }
+
+  return {
+    start: async () => {
+      await createSocket()
     },
+    stop,
+    unlink,
     getSocket: () => socket,
     getConnectionStatus: () => status,
     getSessionState: () => ({ ...session }),

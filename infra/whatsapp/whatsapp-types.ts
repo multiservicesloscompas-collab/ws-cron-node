@@ -1,3 +1,6 @@
+import type { Result } from '../../types/result.ts'
+import type { WASocket } from './baileys-bindings.ts'
+
 /**
  * Shared types for the WhatsApp communication layer.
  *
@@ -48,4 +51,14 @@ export interface WhatsAppSessionState {
   qrGeneratedAt: string | null
   lastDisconnectCode: number | null
   updatedAt: string
+}
+
+export interface WhatsAppClient {
+  start: () => Promise<void>
+  stop: () => Promise<void>
+  unlink: () => Promise<Result<WhatsAppSessionState, string>>
+  getSocket: () => WASocket | null
+  getConnectionStatus: () => ConnectionStatus
+  getSessionState: () => WhatsAppSessionState
+  getOwnJid: () => string
 }

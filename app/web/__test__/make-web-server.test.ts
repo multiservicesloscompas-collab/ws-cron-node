@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 import { expect, test } from "vitest";
-import { success } from "../../../types/result.ts";
+import { failure, success } from "../../../types/result.ts";
 import type { ContactsRepository } from "../../../infra/contacts/make-contacts-repository.ts";
 import {
   createContactsRepository,
@@ -267,6 +267,110 @@ test("makeWebServer status stream upgrades websocket and broadcasts snapshots", 
     expect(firstMessage).toContain('"type":"status"');
     expect(firstMessage).toContain('"defaultTargetJid":"saved@g.us"');
     expect(secondMessage).toContain('"type":"status"');
+  } finally {
+    socket.close();
+    await runtime.server.stop();
+  }
+});
+
+test("makeWebServer unlink route calls dependency, returns success and broadcasts updated status", async () => {
+  let unlinkCalls = 0;
+  const runtime = await startTestServer({
+    unlinkWhatsAppSession: async () => {
+      unlinkCalls += 1;
+      return success({
+        connectionStatus: "loggedOut",
+        phase: "relink_required",
+        requiresUserAction: true,
+        canAutoReconnect: false,
+        reconnectAttempt: 0,
+        nextReconnectDelayMs: null,
+        qr: null,
+        qrDataUrl: null,
+        qrGeneratedAt: null,
+        lastDisconnectCode: 401,
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      });
+    },
+  });
+  const socket = new WebSocket(`${runtime.baseUrl.replace("http", "ws")}/api/status-stream`);
+
+  try {
+    await new Promise<string>((resolve, reject) => {
+      socket.once("message", (data) => resolve(data.toString()));
+      socket.once("error", reject);
+    });
+
+    const nextMessagePromise = new Promise<string>((resolve, reject) => {
+      socket.once("message", (data) => resolve(data.toString()));
+      socket.once("error", reject);
+    });
+
+    const response = await fetch(`${runtime.baseUrl}/api/whatsapp/unlink`, {
+      method: "POST",
+    });
+    const payload = await response.json();
+    const broadcastPayload = await nextMessagePromise;
+
+    expect(unlinkCalls).toBe(1);
+    expect(payload).toEqual({
+      ok: true,
+      message: "Sesión de WhatsApp desvinculada correctamente.",
+      session: {
+        connectionStatus: "loggedOut",
+        phase: "relink_required",
+        requiresUserAction: true,
+        canAutoReconnect: false,
+        reconnectAttempt: 0,
+        nextReconnectDelayMs: null,
+        qr: null,
+        qrDataUrl: null,
+        qrGeneratedAt: null,
+        lastDisconnectCode: 401,
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+    expect(broadcastPayload).toContain('"type":"status"');
+  } finally {
+    socket.close();
+    await runtime.server.stop();
+  }
+});
+
+test("makeWebServer unlink route returns failure and does not broadcast status", async () => {
+  let unlinkCalls = 0;
+  const runtime = await startTestServer({
+    unlinkWhatsAppSession: async () => {
+      unlinkCalls += 1;
+      return failure("No hay una sesión activa de WhatsApp para desvincular.");
+    },
+  });
+  const socket = new WebSocket(`${runtime.baseUrl.replace("http", "ws")}/api/status-stream`);
+
+  try {
+    await new Promise<string>((resolve, reject) => {
+      socket.once("message", (data) => resolve(data.toString()));
+      socket.once("error", reject);
+    });
+
+    let receivedBroadcast = false;
+    socket.once("message", () => {
+      receivedBroadcast = true;
+    });
+
+    const response = await fetch(`${runtime.baseUrl}/api/whatsapp/unlink`, {
+      method: "POST",
+    });
+    const payload = await response.json();
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(unlinkCalls).toBe(1);
+    expect(payload).toEqual({
+      ok: false,
+      error: "No hay una sesión activa de WhatsApp para desvincular.",
+    });
+    expect(receivedBroadcast).toBe(false);
   } finally {
     socket.close();
     await runtime.server.stop();

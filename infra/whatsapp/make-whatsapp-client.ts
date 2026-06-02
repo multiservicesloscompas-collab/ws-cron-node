@@ -6,5 +6,5 @@ export type {
 } from './baileys-bindings.ts'
 export type {
   MakeWhatsAppClientConfig,
-  WhatsAppClient,
 } from './make-whatsapp-client-core.ts'
+export type { WhatsAppClient } from './whatsapp-types.ts'

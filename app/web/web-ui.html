@@ -252,8 +252,9 @@
         }
       }
 
-      /* ─── Theme toggle ───────────────────────────── */
-      .theme-toggle {
+      /* ─── Header icon actions ─────────────────────── */
+      .theme-toggle,
+      .header-icon-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -268,13 +269,20 @@
           background var(--duration-fast) var(--ease-out),
           border-color var(--duration-fast) var(--ease-out);
       }
-      .theme-toggle:hover {
+      .theme-toggle:hover,
+      .header-icon-button:hover:not(:disabled) {
         background: var(--surface-hover);
         border-color: var(--text-muted);
       }
-      .theme-toggle svg {
+      .theme-toggle svg,
+      .header-icon-button svg {
         width: 18px;
         height: 18px;
+      }
+
+      .header-icon-button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
       }
 
       /* ═══════════════════════════════════════════════
@@ -899,8 +907,14 @@
 
       .cron-list-section--dragging {
         border-color: var(--green-light);
-        box-shadow: 0 0 0 1px var(--green-subtle), var(--shadow-sm);
-        background: linear-gradient(180deg, var(--surface), var(--green-surface));
+        box-shadow:
+          0 0 0 1px var(--green-subtle),
+          var(--shadow-sm);
+        background: linear-gradient(
+          180deg,
+          var(--surface),
+          var(--green-surface)
+        );
       }
 
       .cron-toolbar {
@@ -1027,8 +1041,14 @@
 
       .cron-card--drop-target {
         border-color: var(--green);
-        background: linear-gradient(180deg, var(--green-surface), var(--surface));
-        box-shadow: 0 0 0 3px var(--green-subtle), var(--shadow-md);
+        background: linear-gradient(
+          180deg,
+          var(--green-surface),
+          var(--surface)
+        );
+        box-shadow:
+          0 0 0 3px var(--green-subtle),
+          var(--shadow-md);
         transform: translateY(-3px);
       }
 
@@ -1643,9 +1663,15 @@
       }
 
       .cron-segmented-button.active {
-        background: linear-gradient(180deg, var(--surface), var(--green-surface));
+        background: linear-gradient(
+          180deg,
+          var(--surface),
+          var(--green-surface)
+        );
         color: var(--green-dark);
-        box-shadow: 0 0 0 1px var(--green-subtle), var(--shadow-sm);
+        box-shadow:
+          0 0 0 1px var(--green-subtle),
+          var(--shadow-sm);
       }
 
       .cron-message-actions-stack {
@@ -1709,14 +1735,22 @@
         min-height: 56px;
         border: 1px solid var(--green-light);
         border-radius: var(--radius-lg);
-        background: linear-gradient(180deg, var(--surface), var(--green-surface));
+        background: linear-gradient(
+          180deg,
+          var(--surface),
+          var(--green-surface)
+        );
         color: var(--green-dark);
         font-weight: 700;
         box-shadow: inset 0 1px 0 oklch(1 0.004 85 / 0.6);
       }
 
       .cron-add-message-button:hover:not(:disabled) {
-        background: linear-gradient(180deg, var(--surface), var(--green-subtle));
+        background: linear-gradient(
+          180deg,
+          var(--surface),
+          var(--green-subtle)
+        );
         border-color: var(--green);
         color: var(--green-dark);
         box-shadow: 0 10px 24px oklch(0.48 0.16 155 / 0.08);
@@ -1771,6 +1805,19 @@
         display: flex;
         flex-direction: column;
         gap: var(--space-5);
+      }
+
+      .settings-danger-copy {
+        color: var(--text-secondary);
+        font-size: var(--text-sm);
+        line-height: 1.6;
+      }
+
+      .settings-danger-error {
+        margin-top: var(--space-3);
+        color: var(--danger);
+        font-size: var(--text-xs);
+        font-weight: 600;
       }
 
       .cron-empty {
@@ -2772,6 +2819,7 @@
             </svg>
             <span id="unread-count">0</span>
           </span>
+
           <button
             class="theme-toggle"
             id="theme-toggle"
@@ -2802,6 +2850,28 @@
               style="display: none"
             >
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          </button>
+
+          <button
+            class="header-icon-button"
+            id="header-unlink-whatsapp-btn"
+            type="button"
+            aria-label="Desvincular WhatsApp"
+            title="Desvincular WhatsApp"
+            onclick="openUnlinkWhatsAppModal()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M17 16l4-4-4-4" />
+              <path d="M7 12h14" />
+              <path d="M9 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4" />
             </svg>
           </button>
         </div>
@@ -3001,13 +3071,28 @@
                       Edita, ejecuta manualmente o elimina cualquier
                       programación desde una sola vista.
                     </p>
-                    <p id="cron-drag-hint" class="cron-drag-hint" aria-live="polite">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <p
+                      id="cron-drag-hint"
+                      class="cron-drag-hint"
+                      aria-live="polite"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M12 5v14" />
                         <path d="m19 12-7 7-7-7" />
                         <path d="m5 12 7-7 7 7" />
                       </svg>
-                      <span id="cron-drag-hint-text">Arrastra, o mantén el asa en móvil, para reordenar la lista.</span>
+                      <span id="cron-drag-hint-text"
+                        >Arrastra, o mantén el asa en móvil, para reordenar la
+                        lista.</span
+                      >
                     </p>
                   </div>
                 </div>
@@ -3307,14 +3392,18 @@
             alt="Código QR para reconectar WhatsApp"
             style="display: none"
           />
-          <div id="session-qr-placeholder" class="session-screen__qr-placeholder">
+          <div
+            id="session-qr-placeholder"
+            class="session-screen__qr-placeholder"
+          >
             <span class="spinner" aria-hidden="true"></span>
             <div id="session-qr-placeholder-text">
               Esperando el próximo código QR...
             </div>
           </div>
           <div id="session-screen-hint" class="session-screen__hint">
-            Abre WhatsApp en tu celular, entra en Dispositivos vinculados y escanea cuando aparezca el QR.
+            Abre WhatsApp en tu celular, entra en Dispositivos vinculados y
+            escanea cuando aparezca el QR.
           </div>
         </div>
       </section>
@@ -3496,13 +3585,20 @@
                 </div>
 
                 <div class="form-group cron-modal-full-span">
-                  <label class="form-label" for="cron-modal-execution-mode">Modo de ejecución</label>
+                  <label class="form-label" for="cron-modal-execution-mode"
+                    >Modo de ejecución</label
+                  >
                   <select class="form-select" id="cron-modal-execution-mode">
-                    <option value="sequence">Enviar la secuencia completa</option>
-                    <option value="random_single">Enviar un solo mensaje aleatorio</option>
+                    <option value="sequence">
+                      Enviar la secuencia completa
+                    </option>
+                    <option value="random_single">
+                      Enviar un solo mensaje aleatorio
+                    </option>
                   </select>
                   <div class="form-hint">
-                    Usa la secuencia completa para respetar el orden. El modo aleatorio envía solo un mensaje distinto en cada corrida.
+                    Usa la secuencia completa para respetar el orden. El modo
+                    aleatorio envía solo un mensaje distinto en cada corrida.
                   </div>
                 </div>
               </div>
@@ -3565,7 +3661,6 @@
                   </div>
                 </div>
               </div>
-
             </section>
 
             <section class="cron-modal-template-shell cron-modal-message-shell">
@@ -3579,22 +3674,45 @@
                 </div>
               </div>
 
-              <section class="cron-modal-variable-hub" aria-label="Variables disponibles para plantillas">
+              <section
+                class="cron-modal-variable-hub"
+                aria-label="Variables disponibles para plantillas"
+              >
                 <div class="cron-modal-variable-copy">
-                  <div class="cron-modal-variable-title">Variables disponibles</div>
+                  <div class="cron-modal-variable-title">
+                    Variables disponibles
+                  </div>
                   <div class="cron-modal-variable-text">
-                    Úsalas en plantillas estáticas o dentro del prompt para mantener contexto sin repetir datos manualmente en cada bloque.
+                    Úsalas en plantillas estáticas o dentro del prompt para
+                    mantener contexto sin repetir datos manualmente en cada
+                    bloque.
                   </div>
                 </div>
                 <div class="cron-modal-variable-list">
-                  <span class="cron-modal-variable-chip"><code>{{date}}</code></span>
-                  <span class="cron-modal-variable-chip"><code>{{day}}</code></span>
-                  <span class="cron-modal-variable-chip"><code>{{time}}</code></span>
-                  <span class="cron-modal-variable-chip"><code>{{street_washers}}</code></span>
-                  <span class="cron-modal-variable-chip"><code>{{total_bs}}</code></span>
-                  <span class="cron-modal-variable-chip"><code>{{total_usd}}</code></span>
-                  <span class="cron-modal-variable-chip"><code>{{exchange_rate}}</code></span>
-                  <span class="cron-modal-variable-chip"><code>{{payment_category_summary}}</code></span>
+                  <span class="cron-modal-variable-chip"
+                    ><code>{{date}}</code></span
+                  >
+                  <span class="cron-modal-variable-chip"
+                    ><code>{{day}}</code></span
+                  >
+                  <span class="cron-modal-variable-chip"
+                    ><code>{{time}}</code></span
+                  >
+                  <span class="cron-modal-variable-chip"
+                    ><code>{{street_washers}}</code></span
+                  >
+                  <span class="cron-modal-variable-chip"
+                    ><code>{{total_bs}}</code></span
+                  >
+                  <span class="cron-modal-variable-chip"
+                    ><code>{{total_usd}}</code></span
+                  >
+                  <span class="cron-modal-variable-chip"
+                    ><code>{{exchange_rate}}</code></span
+                  >
+                  <span class="cron-modal-variable-chip"
+                    ><code>{{payment_category_summary}}</code></span
+                  >
                 </div>
               </section>
 
@@ -3805,6 +3923,68 @@
       </div>
     </div>
 
+    <!-- ═══ UNLINK WHATSAPP MODAL ═══ -->
+    <div
+      id="unlink-whatsapp-modal"
+      class="modal-overlay"
+      style="display: none"
+      onclick="closeUnlinkWhatsAppModal(event)"
+    >
+      <div
+        class="modal"
+        style="width: 520px"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="unlink-whatsapp-title"
+        onclick="event.stopPropagation()"
+      >
+        <div class="modal-title" id="unlink-whatsapp-title">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+            <path
+              d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
+            />
+          </svg>
+          Desvincular WhatsApp
+        </div>
+        <p class="settings-danger-copy">
+          Se cerrará la sesión actual de este equipo y tendrás que escanear un
+          nuevo QR.
+        </p>
+        <div
+          id="unlink-whatsapp-error"
+          class="settings-danger-error"
+          style="display: none"
+        ></div>
+        <div class="modal-actions">
+          <button
+            id="unlink-whatsapp-cancel-btn"
+            class="btn btn--secondary"
+            type="button"
+            onclick="closeUnlinkWhatsAppModal()"
+          >
+            Cancelar
+          </button>
+          <button
+            id="unlink-whatsapp-confirm-btn"
+            class="btn btn--danger"
+            type="button"
+            onclick="unlinkWhatsAppSession()"
+          >
+            Desvincular
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ═══ NEW CHAT MODAL ═══ -->
     <div
       id="new-chat-modal"
@@ -3975,6 +4155,9 @@
 
       let currentTargetJid = "";
       let currentSession = null;
+      let unlinkWhatsAppLoading = false;
+      let unlinkWhatsAppError = "";
+      let unlinkWhatsAppReturnFocusId = "header-unlink-whatsapp-btn";
       let editingContactJid = null;
       const NEW_CRON_CARD_ID = "__new__";
       let draftCronJob = null;
@@ -4039,13 +4222,14 @@
       }
 
       function normalizeSessionState(session, whatsapp) {
-        const fallbackPhase = whatsapp === "open"
-          ? "connected"
-          : whatsapp === "connecting"
-            ? "reconnecting"
-            : whatsapp === "loggedOut"
-              ? "relink_required"
-              : "disconnected";
+        const fallbackPhase =
+          whatsapp === "open"
+            ? "connected"
+            : whatsapp === "connecting"
+              ? "reconnecting"
+              : whatsapp === "loggedOut"
+                ? "relink_required"
+                : "disconnected";
 
         return {
           ...createDefaultSessionState(),
@@ -4108,7 +4292,9 @@
         banner.style.display = "flex";
         text.textContent = "Reconectando WhatsApp...";
         hint.textContent = session.nextReconnectDelayMs
-          ? "Siguiente intento en " + formatReconnectDelay(session.nextReconnectDelayMs) + "."
+          ? "Siguiente intento en " +
+            formatReconnectDelay(session.nextReconnectDelayMs) +
+            "."
           : "Seguimos intentando en segundo plano.";
       }
 
@@ -4119,11 +4305,13 @@
         const meta = document.getElementById("session-screen-meta");
         const qrImage = document.getElementById("session-qr-image");
         const qrPlaceholder = document.getElementById("session-qr-placeholder");
-        const qrPlaceholderText = document.getElementById("session-qr-placeholder-text");
+        const qrPlaceholderText = document.getElementById(
+          "session-qr-placeholder-text",
+        );
         const hint = document.getElementById("session-screen-hint");
 
-        const isBlocking = session.phase === "qr_pending" ||
-          session.phase === "relink_required";
+        const isBlocking =
+          session.phase === "qr_pending" || session.phase === "relink_required";
 
         overlay.style.display = isBlocking ? "flex" : "none";
         overlay.setAttribute("aria-hidden", isBlocking ? "false" : "true");
@@ -4138,7 +4326,8 @@
         const metaItems = [];
         if (session.phase === "qr_pending") {
           title.textContent = "Escanea el QR para reconectar";
-          copy.textContent = "La sesión necesita confirmación desde tu teléfono. Cuando escanees el código, el panel vuelve a quedar activo solo.";
+          copy.textContent =
+            "La sesión necesita confirmación desde tu teléfono. Cuando escanees el código, el panel vuelve a quedar activo solo.";
         } else {
           title.textContent = "Vuelve a enlazar WhatsApp";
           copy.textContent = session.qrDataUrl
@@ -4169,15 +4358,18 @@
           qrImage.style.display = "block";
           qrPlaceholder.style.display = "none";
           qrPlaceholderText.textContent = "Esperando el próximo código QR...";
-          hint.textContent = "Abre WhatsApp en tu celular, entra en Dispositivos vinculados y escanea este QR.";
+          hint.textContent =
+            "Abre WhatsApp en tu celular, entra en Dispositivos vinculados y escanea este QR.";
         } else {
           qrImage.removeAttribute("src");
           qrImage.style.display = "none";
           qrPlaceholder.style.display = "flex";
-          qrPlaceholderText.textContent = session.phase === "relink_required"
-            ? "Esperando el próximo código QR..."
-            : "Preparando el código QR...";
-          hint.textContent = "Mantén esta pantalla abierta. El QR aparecerá aquí en cuanto WhatsApp lo genere.";
+          qrPlaceholderText.textContent =
+            session.phase === "relink_required"
+              ? "Esperando el próximo código QR..."
+              : "Preparando el código QR...";
+          hint.textContent =
+            "Mantén esta pantalla abierta. El QR aparecerá aquí en cuanto WhatsApp lo genere.";
         }
       }
 
@@ -4196,6 +4388,7 @@
 
         renderReconnectBanner(currentSession);
         renderSessionOverlay(currentSession);
+        renderUnlinkWhatsAppAction();
 
         const ub = document.getElementById("unread-badge");
         if (data.unread > 0) {
@@ -4239,8 +4432,11 @@
         if (!isDocumentVisible() || statusSocket) return;
 
         try {
-          const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-          const socket = new WebSocket(protocol + "//" + window.location.host + "/api/status-stream");
+          const protocol =
+            window.location.protocol === "https:" ? "wss:" : "ws:";
+          const socket = new WebSocket(
+            protocol + "//" + window.location.host + "/api/status-stream",
+          );
           statusSocket = socket;
 
           socket.onopen = () => {
@@ -4325,7 +4521,10 @@
 
       function writeCronJobOrder(orderIds) {
         try {
-          localStorage.setItem(CRON_ORDER_STORAGE_KEY, JSON.stringify(orderIds));
+          localStorage.setItem(
+            CRON_ORDER_STORAGE_KEY,
+            JSON.stringify(orderIds),
+          );
         } catch (_) {}
       }
 
@@ -4391,13 +4590,19 @@
         }
 
         if (cronListSection) {
-          cronListSection.classList.toggle("cron-list-section--dragging", isDragging);
+          cronListSection.classList.toggle(
+            "cron-list-section--dragging",
+            isDragging,
+          );
         }
 
         document.querySelectorAll("[data-cron-card]").forEach((card) => {
           const cardId = card.dataset.cronCard || "";
           const dropTargetId = card.dataset.cronDropTarget || "";
-          card.classList.toggle("cron-card--dragging", cardId === draggedCronJobId);
+          card.classList.toggle(
+            "cron-card--dragging",
+            cardId === draggedCronJobId,
+          );
           card.classList.toggle(
             "cron-card--drop-target",
             Boolean(dragOverCronJobId) &&
@@ -4442,7 +4647,8 @@
 
       function startCronTouchDrag(event, id) {
         if (!id || id === NEW_CRON_CARD_ID) return;
-        if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+        if (event.pointerType !== "touch" && event.pointerType !== "pen")
+          return;
 
         draggedCronJobId = id;
         dragOverCronJobId = "";
@@ -4476,7 +4682,8 @@
       }
 
       function moveCronTouchDrag(event) {
-        if (!draggedCronJobId || cronTouchDragPointerId !== event.pointerId) return;
+        if (!draggedCronJobId || cronTouchDragPointerId !== event.pointerId)
+          return;
 
         cronTouchDragMoved = true;
         const nextTargetId = getCronDropTargetFromPoint(
@@ -4491,7 +4698,8 @@
       }
 
       function endCronTouchDrag(event) {
-        if (!draggedCronJobId || cronTouchDragPointerId !== event.pointerId) return;
+        if (!draggedCronJobId || cronTouchDragPointerId !== event.pointerId)
+          return;
 
         const sourceId = draggedCronJobId;
         const targetId = dragOverCronJobId;
@@ -4619,6 +4827,13 @@
           );
           if (cronSettingsModal.style.display !== "none") {
             closeCronSettingsModal();
+            return;
+          }
+          const unlinkWhatsAppModal = document.getElementById(
+            "unlink-whatsapp-modal",
+          );
+          if (unlinkWhatsAppModal.style.display !== "none") {
+            closeUnlinkWhatsAppModal();
             return;
           }
           const modal = document.getElementById("new-chat-modal");
@@ -4852,9 +5067,10 @@
       }
 
       function normalizeCronModalMessage(message) {
-        const contentType = message?.contentType === "llm_generated"
-          ? "llm_generated"
-          : "static_template";
+        const contentType =
+          message?.contentType === "llm_generated"
+            ? "llm_generated"
+            : "static_template";
 
         return createEmptyCronMessage({
           contentType,
@@ -4862,14 +5078,18 @@
           llmPrompt: message?.llmPrompt || "",
           llmModel: message?.llmModel || "gemini-2.5-flash",
           fallbackMessages: Array.isArray(message?.fallbackMessages)
-            ? message.fallbackMessages.filter((entry) => typeof entry === "string")
+            ? message.fallbackMessages.filter(
+                (entry) => typeof entry === "string",
+              )
             : [],
         });
       }
 
       function hydrateCronJobMessages(cronJob) {
         if (Array.isArray(cronJob?.messages) && cronJob.messages.length) {
-          return cronJob.messages.map((message) => normalizeCronModalMessage(message));
+          return cronJob.messages.map((message) =>
+            normalizeCronModalMessage(message),
+          );
         }
 
         return [normalizeCronModalMessage(cronJob)];
@@ -4884,19 +5104,21 @@
         const firstMessage = getFirstCronMessage(messages);
         return {
           ...cronJob,
-          executionMode: cronJob?.executionMode === "random_single"
-            ? "random_single"
-            : "sequence",
+          executionMode:
+            cronJob?.executionMode === "random_single"
+              ? "random_single"
+              : "sequence",
           messages,
           contentType: firstMessage.contentType,
           staticTemplate: firstMessage.staticTemplate,
           llmPrompt: firstMessage.llmPrompt,
           llmModel: firstMessage.llmModel,
-          fallbackMessages: firstMessage.contentType === "llm_generated"
-            ? (firstMessage.fallbackMessages.length
-              ? firstMessage.fallbackMessages
-              : null)
-            : null,
+          fallbackMessages:
+            firstMessage.contentType === "llm_generated"
+              ? firstMessage.fallbackMessages.length
+                ? firstMessage.fallbackMessages
+                : null
+              : null,
         };
       }
 
@@ -4948,7 +5170,7 @@
       function setCronModalMessages(messages) {
         showOptionalCronMessageBlocks = false;
         cronModalMessages = messages.map((message) =>
-          normalizeCronModalMessage(message)
+          normalizeCronModalMessage(message),
         );
         renderCronModalMessages();
       }
@@ -4967,219 +5189,223 @@
             String(slotNumber) +
             '">' +
             '<div class="cron-message-card-header">' +
-            '<div>' +
+            "<div>" +
             '<div class="cron-message-card-title">Mensaje ' +
             String(slotNumber) +
-            '</div>' +
+            "</div>" +
             '<div class="cron-message-card-copy">Bloque opcional oculto por defecto.</div>' +
-            '</div>' +
+            "</div>" +
             '<span class="badge badge--neutral">Opcional</span>' +
-            '</div>' +
+            "</div>" +
             '<div class="cron-message-placeholder-copy">Muéstralo solo cuando necesites ampliar la secuencia. Usa <strong>Agregar mensaje</strong> para activar el siguiente bloque disponible.</div>' +
-            '</article>'
+            "</article>"
           );
         }).join("");
       }
 
       function renderCronModalFallbackMessages(index, messages) {
-        return messages.map((message, fallbackIndex) => {
-          return (
-            '<div class="cron-fallback-row">' +
-            '<textarea class="form-textarea" rows="4" data-cron-message-fallback-input="true" data-cron-message-index="' +
-            String(index) +
-            '" data-cron-fallback-index="' +
-            String(fallbackIndex) +
-            '" oninput="updateCronModalFallbackMessage(' +
-            String(index) +
-            ', ' +
-            String(fallbackIndex) +
-            ', this.value)" placeholder="Mensaje alternativo si Gemini falla">' +
-            escapeHtml(message) +
-            '</textarea>' +
-            '<button class="btn btn--ghost btn--sm" type="button" onclick="removeCronModalFallbackMessage(' +
-            String(index) +
-            ', ' +
-            String(fallbackIndex) +
-            ')">Quitar</button>' +
-            '</div>'
-          );
-        }).join("");
+        return messages
+          .map((message, fallbackIndex) => {
+            return (
+              '<div class="cron-fallback-row">' +
+              '<textarea class="form-textarea" rows="4" data-cron-message-fallback-input="true" data-cron-message-index="' +
+              String(index) +
+              '" data-cron-fallback-index="' +
+              String(fallbackIndex) +
+              '" oninput="updateCronModalFallbackMessage(' +
+              String(index) +
+              ", " +
+              String(fallbackIndex) +
+              ', this.value)" placeholder="Mensaje alternativo si Gemini falla">' +
+              escapeHtml(message) +
+              "</textarea>" +
+              '<button class="btn btn--ghost btn--sm" type="button" onclick="removeCronModalFallbackMessage(' +
+              String(index) +
+              ", " +
+              String(fallbackIndex) +
+              ')">Quitar</button>' +
+              "</div>"
+            );
+          })
+          .join("");
       }
 
       function renderCronModalMessages() {
         const container = document.getElementById("cron-modal-message-list");
         updateCronModalMessageCount();
 
-        const configuredMessagesMarkup = cronModalMessages.map((message, index) => {
-          const isFirst = index === 0;
-          const isLast = index === cronModalMessages.length - 1;
-          const isLlm = message.contentType === "llm_generated";
-          const fallbackMessages = message.fallbackMessages.length
-            ? message.fallbackMessages
-            : [""];
+        const configuredMessagesMarkup = cronModalMessages
+          .map((message, index) => {
+            const isFirst = index === 0;
+            const isLast = index === cronModalMessages.length - 1;
+            const isLlm = message.contentType === "llm_generated";
+            const fallbackMessages = message.fallbackMessages.length
+              ? message.fallbackMessages
+              : [""];
 
-          return (
-            '<article class="cron-message-card" data-cron-message-card="' +
-            String(index) +
-            '">' +
-            '<div class="cron-message-card-header">' +
-            '<div>' +
-            '<div class="cron-message-card-title">Mensaje ' +
-            String(index + 1) +
-            '</div>' +
-            '<div class="cron-message-card-copy">El orden se respeta al ejecutarse.</div>' +
-            '</div>' +
-            '<div class="cron-message-card-actions">' +
-            '<button class="btn btn--ghost btn--sm" type="button" onclick="moveCronModalMessage(' +
-            String(index) +
-            ', -1)"' +
-            (isFirst ? ' disabled' : '') +
-            '>Subir</button>' +
-            '<button class="btn btn--ghost btn--sm" type="button" onclick="moveCronModalMessage(' +
-            String(index) +
-            ', 1)"' +
-            (isLast ? ' disabled' : '') +
-            '>Bajar</button>' +
-            '<button class="btn btn--ghost btn--sm" type="button" onclick="removeCronModalMessage(' +
-            String(index) +
-            ')"' +
-            (cronModalMessages.length === 1 ? ' disabled' : '') +
-            '>Quitar</button>' +
-            '</div>' +
-            '</div>' +
-            '<div class="cron-message-card-grid">' +
-            '<div class="cron-message-config-card">' +
-            '<div class="cron-message-panel-header">' +
-            '<div class="cron-message-panel-title">Configuración</div>' +
-            '<div class="cron-message-panel-copy">Controla el orden, el tipo de contenido y el respaldo de este bloque.</div>' +
-            '</div>' +
-            '<div class="cron-message-actions-stack">' +
-            '<button class="btn btn--ghost btn--sm" type="button" onclick="moveCronModalMessage(' +
-            String(index) +
-            ', -1)"' +
-            (isFirst ? ' disabled' : '') +
-            '>Subir</button>' +
-            '<button class="btn btn--ghost btn--sm" type="button" onclick="moveCronModalMessage(' +
-            String(index) +
-            ', 1)"' +
-            (isLast ? ' disabled' : '') +
-            '>Bajar</button>' +
-            '<button class="btn btn--ghost btn--sm" type="button" onclick="removeCronModalMessage(' +
-            String(index) +
-            ')"' +
-            (cronModalMessages.length === 1 ? ' disabled' : '') +
-            '>Quitar</button>' +
-            '</div>' +
-            '<div class="cron-message-type-panel">' +
-            '<label class="form-label" for="cron-modal-message-type-' +
-            String(index) +
-            '">Tipo de contenido</label>' +
-            '<div class="cron-segmented-control" role="tablist" aria-label="Tipo de contenido del mensaje ' +
-            String(index + 1) +
-            '">' +
-            '<button class="cron-segmented-button' +
-            (isLlm ? '' : ' active') +
-            '" type="button" role="tab" aria-selected="' +
-            (isLlm ? 'false' : 'true') +
-            '" id="cron-modal-message-type-' +
-            String(index) +
-            '-static" onclick="updateCronModalMessageType(' +
-            String(index) +
-            ', \'static_template\')">Plantilla</button>' +
-            '<button class="cron-segmented-button' +
-            (isLlm ? ' active' : '') +
-            '" type="button" role="tab" aria-selected="' +
-            (isLlm ? 'true' : 'false') +
-            '" id="cron-modal-message-type-' +
-            String(index) +
-            '-llm" onclick="updateCronModalMessageType(' +
-            String(index) +
-            ', \'llm_generated\')">Gemini</button>' +
-            '</div>' +
-            '</div>' +
-            (isLlm
-              ? '<div class="cron-message-fallback-panel">' +
-              '<div class="cron-fallback-header">' +
-              '<div><div class="cron-fallback-title">En caso de error</div><div class="cron-fallback-copy">Si Gemini falla después de 3 reintentos, puedes enviar uno de estos mensajes manuales automáticamente.</div></div>' +
-                '<button class="btn btn--secondary btn--sm" type="button" onclick="addCronModalFallbackMessage(' +
-                String(index) +
-                ')">Agregar otro mensaje</button>' +
-                '</div>' +
-                '<div class="cron-fallback-fields">' +
-                renderCronModalFallbackMessages(index, fallbackMessages) +
-                '</div>' +
-                '</div>'
-              : '<div class="cron-message-static-note">Este bloque usa una plantilla fija. Cambia a Gemini solo si necesitas que el contenido se genere dinámicamente.</div>') +
-            '</div>' +
-            '<div class="cron-message-editor-card">' +
-            '<div class="cron-message-panel-header">' +
-            '<div class="cron-message-panel-title">' +
-            (isLlm ? 'Prompt y modelo' : 'Editor de plantilla') +
-            '</div>' +
-            '<div class="cron-message-panel-copy">' +
-            (isLlm
-              ? 'Define el modelo y la instrucción que Gemini recibe antes de construir el mensaje.'
-              : 'Escribe el mensaje final usando las variables compartidas del panel superior.') +
-            '</div>' +
-            '</div>' +
-            '<div class="cron-message-body">' +
-            (isLlm
-              ? '<div class="cron-llm-stack" id="cron-modal-llm-section-' +
-                String(index) +
-                '">' +
-                '<div class="cron-llm-card">' +
-                '<div class="form-group">' +
-                '<label class="form-label" for="cron-modal-llm-model-' +
-                String(index) +
-                '">Modelo Gemini</label>' +
-                '<input class="form-input" type="text" id="cron-modal-llm-model-' +
-                String(index) +
-                '" autocomplete="off" value="' +
-                escapeAttr(message.llmModel || "gemini-2.5-flash") +
-                '" oninput="updateCronModalMessageField(' +
-                String(index) +
-                ', \'llmModel\', this.value)" />' +
-                '</div>' +
-                '<div class="form-group" style="margin-bottom: 0">' +
-                '<label class="form-label" for="cron-modal-llm-prompt-' +
-                String(index) +
-                '">Prompt</label>' +
-                '<textarea class="form-textarea" id="cron-modal-llm-prompt-' +
-                String(index) +
-                '" rows="10" oninput="updateCronModalMessageField(' +
-                String(index) +
-                ', \'llmPrompt\', this.value)">' +
-                escapeHtml(message.llmPrompt || "") +
-                '</textarea>' +
-                '<div class="form-hint">El prompt se procesa en el servidor. Si falta <code>GEMINI_API_KEY</code>, el cron fallará con un error claro.</div>' +
-                '</div>' +
-                '</div>' +
-                '</div>'
-              : '<div id="cron-modal-static-section-' +
-                String(index) +
-                '">' +
-                '<div class="form-group" style="margin-bottom: 0">' +
-                '<label class="form-label" for="cron-modal-static-template-' +
-                String(index) +
-                '">Plantilla</label>' +
-                '<textarea class="form-textarea" id="cron-modal-static-template-' +
-                String(index) +
-                '" rows="10" oninput="updateCronModalMessageField(' +
-                String(index) +
-                ', \'staticTemplate\', this.value)">' +
-                escapeHtml(message.staticTemplate || "") +
-                '</textarea>' +
-                '<div class="form-hint">Usa el panel de variables para copiar rápidamente los placeholders admitidos.</div>' +
-                '</div>' +
-                '</div>') +
-            '</div>' +
-            '</div>' +
-            '</article>'
-          );
-        }).join("");
+            return (
+              '<article class="cron-message-card" data-cron-message-card="' +
+              String(index) +
+              '">' +
+              '<div class="cron-message-card-header">' +
+              "<div>" +
+              '<div class="cron-message-card-title">Mensaje ' +
+              String(index + 1) +
+              "</div>" +
+              '<div class="cron-message-card-copy">El orden se respeta al ejecutarse.</div>' +
+              "</div>" +
+              '<div class="cron-message-card-actions">' +
+              '<button class="btn btn--ghost btn--sm" type="button" onclick="moveCronModalMessage(' +
+              String(index) +
+              ', -1)"' +
+              (isFirst ? " disabled" : "") +
+              ">Subir</button>" +
+              '<button class="btn btn--ghost btn--sm" type="button" onclick="moveCronModalMessage(' +
+              String(index) +
+              ', 1)"' +
+              (isLast ? " disabled" : "") +
+              ">Bajar</button>" +
+              '<button class="btn btn--ghost btn--sm" type="button" onclick="removeCronModalMessage(' +
+              String(index) +
+              ')"' +
+              (cronModalMessages.length === 1 ? " disabled" : "") +
+              ">Quitar</button>" +
+              "</div>" +
+              "</div>" +
+              '<div class="cron-message-card-grid">' +
+              '<div class="cron-message-config-card">' +
+              '<div class="cron-message-panel-header">' +
+              '<div class="cron-message-panel-title">Configuración</div>' +
+              '<div class="cron-message-panel-copy">Controla el orden, el tipo de contenido y el respaldo de este bloque.</div>' +
+              "</div>" +
+              '<div class="cron-message-actions-stack">' +
+              '<button class="btn btn--ghost btn--sm" type="button" onclick="moveCronModalMessage(' +
+              String(index) +
+              ', -1)"' +
+              (isFirst ? " disabled" : "") +
+              ">Subir</button>" +
+              '<button class="btn btn--ghost btn--sm" type="button" onclick="moveCronModalMessage(' +
+              String(index) +
+              ', 1)"' +
+              (isLast ? " disabled" : "") +
+              ">Bajar</button>" +
+              '<button class="btn btn--ghost btn--sm" type="button" onclick="removeCronModalMessage(' +
+              String(index) +
+              ')"' +
+              (cronModalMessages.length === 1 ? " disabled" : "") +
+              ">Quitar</button>" +
+              "</div>" +
+              '<div class="cron-message-type-panel">' +
+              '<label class="form-label" for="cron-modal-message-type-' +
+              String(index) +
+              '">Tipo de contenido</label>' +
+              '<div class="cron-segmented-control" role="tablist" aria-label="Tipo de contenido del mensaje ' +
+              String(index + 1) +
+              '">' +
+              '<button class="cron-segmented-button' +
+              (isLlm ? "" : " active") +
+              '" type="button" role="tab" aria-selected="' +
+              (isLlm ? "false" : "true") +
+              '" id="cron-modal-message-type-' +
+              String(index) +
+              '-static" onclick="updateCronModalMessageType(' +
+              String(index) +
+              ", 'static_template')\">Plantilla</button>" +
+              '<button class="cron-segmented-button' +
+              (isLlm ? " active" : "") +
+              '" type="button" role="tab" aria-selected="' +
+              (isLlm ? "true" : "false") +
+              '" id="cron-modal-message-type-' +
+              String(index) +
+              '-llm" onclick="updateCronModalMessageType(' +
+              String(index) +
+              ", 'llm_generated')\">Gemini</button>" +
+              "</div>" +
+              "</div>" +
+              (isLlm
+                ? '<div class="cron-message-fallback-panel">' +
+                  '<div class="cron-fallback-header">' +
+                  '<div><div class="cron-fallback-title">En caso de error</div><div class="cron-fallback-copy">Si Gemini falla después de 3 reintentos, puedes enviar uno de estos mensajes manuales automáticamente.</div></div>' +
+                  '<button class="btn btn--secondary btn--sm" type="button" onclick="addCronModalFallbackMessage(' +
+                  String(index) +
+                  ')">Agregar otro mensaje</button>' +
+                  "</div>" +
+                  '<div class="cron-fallback-fields">' +
+                  renderCronModalFallbackMessages(index, fallbackMessages) +
+                  "</div>" +
+                  "</div>"
+                : '<div class="cron-message-static-note">Este bloque usa una plantilla fija. Cambia a Gemini solo si necesitas que el contenido se genere dinámicamente.</div>') +
+              "</div>" +
+              '<div class="cron-message-editor-card">' +
+              '<div class="cron-message-panel-header">' +
+              '<div class="cron-message-panel-title">' +
+              (isLlm ? "Prompt y modelo" : "Editor de plantilla") +
+              "</div>" +
+              '<div class="cron-message-panel-copy">' +
+              (isLlm
+                ? "Define el modelo y la instrucción que Gemini recibe antes de construir el mensaje."
+                : "Escribe el mensaje final usando las variables compartidas del panel superior.") +
+              "</div>" +
+              "</div>" +
+              '<div class="cron-message-body">' +
+              (isLlm
+                ? '<div class="cron-llm-stack" id="cron-modal-llm-section-' +
+                  String(index) +
+                  '">' +
+                  '<div class="cron-llm-card">' +
+                  '<div class="form-group">' +
+                  '<label class="form-label" for="cron-modal-llm-model-' +
+                  String(index) +
+                  '">Modelo Gemini</label>' +
+                  '<input class="form-input" type="text" id="cron-modal-llm-model-' +
+                  String(index) +
+                  '" autocomplete="off" value="' +
+                  escapeAttr(message.llmModel || "gemini-2.5-flash") +
+                  '" oninput="updateCronModalMessageField(' +
+                  String(index) +
+                  ", 'llmModel', this.value)\" />" +
+                  "</div>" +
+                  '<div class="form-group" style="margin-bottom: 0">' +
+                  '<label class="form-label" for="cron-modal-llm-prompt-' +
+                  String(index) +
+                  '">Prompt</label>' +
+                  '<textarea class="form-textarea" id="cron-modal-llm-prompt-' +
+                  String(index) +
+                  '" rows="10" oninput="updateCronModalMessageField(' +
+                  String(index) +
+                  ", 'llmPrompt', this.value)\">" +
+                  escapeHtml(message.llmPrompt || "") +
+                  "</textarea>" +
+                  '<div class="form-hint">El prompt se procesa en el servidor. Si falta <code>GEMINI_API_KEY</code>, el cron fallará con un error claro.</div>' +
+                  "</div>" +
+                  "</div>" +
+                  "</div>"
+                : '<div id="cron-modal-static-section-' +
+                  String(index) +
+                  '">' +
+                  '<div class="form-group" style="margin-bottom: 0">' +
+                  '<label class="form-label" for="cron-modal-static-template-' +
+                  String(index) +
+                  '">Plantilla</label>' +
+                  '<textarea class="form-textarea" id="cron-modal-static-template-' +
+                  String(index) +
+                  '" rows="10" oninput="updateCronModalMessageField(' +
+                  String(index) +
+                  ", 'staticTemplate', this.value)\">" +
+                  escapeHtml(message.staticTemplate || "") +
+                  "</textarea>" +
+                  '<div class="form-hint">Usa el panel de variables para copiar rápidamente los placeholders admitidos.</div>' +
+                  "</div>" +
+                  "</div>") +
+              "</div>" +
+              "</div>" +
+              "</article>"
+            );
+          })
+          .join("");
 
-        container.innerHTML = configuredMessagesMarkup +
-          renderOptionalCronMessageBlocks();
+        container.innerHTML =
+          configuredMessagesMarkup + renderOptionalCronMessageBlocks();
       }
 
       function replaceCronModalMessage(index, updater, options = {}) {
@@ -5193,21 +5419,29 @@
       }
 
       function updateCronModalMessageField(index, field, value) {
-        replaceCronModalMessage(index, (message) => ({
-          ...message,
-          [field]: value,
-        }), { render: false });
+        replaceCronModalMessage(
+          index,
+          (message) => ({
+            ...message,
+            [field]: value,
+          }),
+          { render: false },
+        );
       }
 
       function updateCronModalMessageType(index, contentType) {
         replaceCronModalMessage(index, (message) => ({
           ...message,
-          contentType: contentType === "llm_generated"
-            ? "llm_generated"
-            : "static_template",
-          fallbackMessages: contentType === "llm_generated"
-            ? (message.fallbackMessages?.length ? message.fallbackMessages : [""])
-            : [],
+          contentType:
+            contentType === "llm_generated"
+              ? "llm_generated"
+              : "static_template",
+          fallbackMessages:
+            contentType === "llm_generated"
+              ? message.fallbackMessages?.length
+                ? message.fallbackMessages
+                : [""]
+              : [],
         }));
       }
 
@@ -5225,7 +5459,9 @@
 
       function removeCronModalMessage(index) {
         if (cronModalMessages.length === 1) return;
-        cronModalMessages = cronModalMessages.filter((_, currentIndex) => currentIndex !== index);
+        cronModalMessages = cronModalMessages.filter(
+          (_, currentIndex) => currentIndex !== index,
+        );
         renderCronModalMessages();
       }
 
@@ -5247,19 +5483,24 @@
       }
 
       function updateCronModalFallbackMessage(index, fallbackIndex, value) {
-        replaceCronModalMessage(index, (message) => ({
-          ...message,
-          fallbackMessages: (message.fallbackMessages || []).map((entry, currentIndex) =>
-            currentIndex === fallbackIndex ? value : entry
-          ),
-        }), { render: false });
+        replaceCronModalMessage(
+          index,
+          (message) => ({
+            ...message,
+            fallbackMessages: (message.fallbackMessages || []).map(
+              (entry, currentIndex) =>
+                currentIndex === fallbackIndex ? value : entry,
+            ),
+          }),
+          { render: false },
+        );
       }
 
       function removeCronModalFallbackMessage(index, fallbackIndex) {
         replaceCronModalMessage(index, (message) => ({
           ...message,
-          fallbackMessages: (message.fallbackMessages || []).filter((_, currentIndex) =>
-            currentIndex !== fallbackIndex
+          fallbackMessages: (message.fallbackMessages || []).filter(
+            (_, currentIndex) => currentIndex !== fallbackIndex,
           ),
         }));
       }
@@ -5272,23 +5513,28 @@
 
       function getCronMessagesFromModal() {
         return cronModalMessages.map((message, index) => {
-          const contentType = message.contentType === "llm_generated"
-            ? "llm_generated"
-            : "static_template";
+          const contentType =
+            message.contentType === "llm_generated"
+              ? "llm_generated"
+              : "static_template";
           return {
             contentType,
-            staticTemplate: contentType === "static_template"
-              ? String(message.staticTemplate || "")
-              : null,
-            llmPrompt: contentType === "llm_generated"
-              ? String(message.llmPrompt || "")
-              : null,
-            llmModel: contentType === "llm_generated"
-              ? String(message.llmModel || "").trim()
-              : null,
-            fallbackMessages: contentType === "llm_generated"
-              ? getCronFallbackMessagesFromModal(index)
-              : [],
+            staticTemplate:
+              contentType === "static_template"
+                ? String(message.staticTemplate || "")
+                : null,
+            llmPrompt:
+              contentType === "llm_generated"
+                ? String(message.llmPrompt || "")
+                : null,
+            llmModel:
+              contentType === "llm_generated"
+                ? String(message.llmModel || "").trim()
+                : null,
+            fallbackMessages:
+              contentType === "llm_generated"
+                ? getCronFallbackMessagesFromModal(index)
+                : [],
           };
         });
       }
@@ -5309,8 +5555,10 @@
         document.getElementById("cron-modal-save").innerHTML = isDraft
           ? ICONS.save + " Crear cron"
           : ICONS.save + " Guardar cambios";
-        document.getElementById("cron-modal-name").value = hydratedCronJob.name || "";
-        document.getElementById("cron-modal-days").value = hydratedCronJob.days || "*";
+        document.getElementById("cron-modal-name").value =
+          hydratedCronJob.name || "";
+        document.getElementById("cron-modal-days").value =
+          hydratedCronJob.days || "*";
         document.getElementById("cron-modal-time").value =
           hydratedCronJob.scheduleTime || "08:30";
         document.getElementById("cron-modal-execution-mode").value =
@@ -5374,6 +5622,94 @@
         if (returnTarget) returnTarget.focus();
       }
 
+      function renderUnlinkWhatsAppAction() {
+        const headerButton = document.getElementById(
+          "header-unlink-whatsapp-btn",
+        );
+        const confirmButton = document.getElementById(
+          "unlink-whatsapp-confirm-btn",
+        );
+        const cancelButton = document.getElementById(
+          "unlink-whatsapp-cancel-btn",
+        );
+        const error = document.getElementById("unlink-whatsapp-error");
+        if (!headerButton || !confirmButton || !cancelButton || !error) return;
+
+        const disabled =
+          unlinkWhatsAppLoading || currentSession?.phase !== "connected";
+        headerButton.disabled = disabled;
+        confirmButton.disabled = disabled;
+        cancelButton.disabled = unlinkWhatsAppLoading;
+        confirmButton.textContent = unlinkWhatsAppLoading
+          ? "Desvinculando..."
+          : "Desvincular";
+        error.textContent = unlinkWhatsAppError;
+        error.style.display = unlinkWhatsAppError ? "block" : "none";
+      }
+
+      function openUnlinkWhatsAppModal() {
+        if (unlinkWhatsAppLoading || currentSession?.phase !== "connected")
+          return;
+
+        unlinkWhatsAppReturnFocusId =
+          document.activeElement?.id || "header-unlink-whatsapp-btn";
+        unlinkWhatsAppError = "";
+        document.getElementById("unlink-whatsapp-modal").style.display = "flex";
+        renderUnlinkWhatsAppAction();
+        window.requestAnimationFrame(() => {
+          document.getElementById("unlink-whatsapp-cancel-btn")?.focus();
+        });
+      }
+
+      function closeUnlinkWhatsAppModal(e, force = false) {
+        if (e && !e.target.classList.contains("modal-overlay")) return;
+        if (unlinkWhatsAppLoading && !force) return;
+
+        document.getElementById("unlink-whatsapp-modal").style.display = "none";
+        unlinkWhatsAppError = "";
+        renderUnlinkWhatsAppAction();
+        const returnTarget = document.getElementById(
+          unlinkWhatsAppReturnFocusId,
+        );
+        if (returnTarget) returnTarget.focus();
+      }
+
+      async function unlinkWhatsAppSession() {
+        if (unlinkWhatsAppLoading || currentSession?.phase !== "connected")
+          return;
+
+        unlinkWhatsAppError = "";
+        renderUnlinkWhatsAppAction();
+
+        unlinkWhatsAppLoading = true;
+        renderUnlinkWhatsAppAction();
+
+        try {
+          const response = await apiPost("/api/whatsapp/unlink");
+
+          if (!response.ok) {
+            unlinkWhatsAppError =
+              response.error || "No se pudo desvincular WhatsApp.";
+            showToast(unlinkWhatsAppError, "error");
+            return;
+          }
+
+          closeUnlinkWhatsAppModal(undefined, true);
+          showToast(
+            response.message ||
+              "Sesión de WhatsApp desvinculada correctamente.",
+            "success",
+          );
+          await updateStatus();
+        } catch (e) {
+          unlinkWhatsAppError = "No se pudo desvincular WhatsApp.";
+          showToast("Error: " + e.message, "error");
+        } finally {
+          unlinkWhatsAppLoading = false;
+          renderUnlinkWhatsAppAction();
+        }
+      }
+
       function getCronContentLabel(contentType) {
         return contentType === "llm_generated" ? "Gemini" : "Plantilla";
       }
@@ -5407,9 +5743,11 @@
           days: document.getElementById("cron-modal-days").value,
           enabled: sourceCron?.enabled !== false,
           targetJid: targetInput.value.trim(),
-          executionMode: document.getElementById("cron-modal-execution-mode").value === "random_single"
-            ? "random_single"
-            : "sequence",
+          executionMode:
+            document.getElementById("cron-modal-execution-mode").value ===
+            "random_single"
+              ? "random_single"
+              : "sequence",
           messages,
           contentType: firstMessage.contentType,
           staticTemplate: firstMessage.staticTemplate,
@@ -5423,7 +5761,8 @@
         const isDraft = options.isDraft;
         const cardId = cronJob.id;
         const isDraggable = !isDraft;
-        const dropTargetId = options.dropTargetId || (isDraggable ? cardId : "");
+        const dropTargetId =
+          options.dropTargetId || (isDraggable ? cardId : "");
         const contentLabel = getCronContentLabel(cronJob.contentType);
         const toggleLabel = cronJob.enabled ? "Pausar cron" : "Activar cron";
         const toggleTitle = cronJob.enabled
@@ -5457,17 +5796,17 @@
           String(isDraggable) +
           '"' +
           (isDraggable ? ' draggable="true"' : "") +
-          ((isDraggable || dropTargetId)
+          (isDraggable || dropTargetId
             ? (isDraggable
-                ? ' ondragstart="startCronDrag(event, \'' +
+                ? " ondragstart=\"startCronDrag(event, '" +
                   escapeJs(cardId) +
-                  '\')"'
+                  "')\""
                 : "") +
-              ' ondragover="allowCronCardDrop(event, \'' +
+              " ondragover=\"allowCronCardDrop(event, '" +
               escapeJs(dropTargetId) +
-              '\')" ondrop="dropCronJob(event, \'' +
+              "')\" ondrop=\"dropCronJob(event, '" +
               escapeJs(dropTargetId) +
-              '\')"'
+              "')\""
             : "") +
           (isDraggable ? ' ondragend="endCronDrag()"' : "") +
           '">' +
@@ -5556,7 +5895,7 @@
           '<button id="cron-trigger-' +
           escapeAttr(id) +
           '" class="cron-inline-action' +
-          (isLoading ? ' cron-inline-action--loading' : '') +
+          (isLoading ? " cron-inline-action--loading" : "") +
           '" type="button" onclick="triggerCronJob(\'' +
           escapeJs(id) +
           '\')" aria-label="' +
@@ -5566,8 +5905,8 @@
           '" aria-busy="' +
           String(isLoading) +
           '"' +
-          (isLoading ? ' disabled' : '') +
-          '>' +
+          (isLoading ? " disabled" : "") +
+          ">" +
           (isLoading ? '<span class="spinner"></span>' : ICONS.play) +
           "</button>"
         );
@@ -5595,11 +5934,10 @@
         const activeCount = cronJobs.filter(
           (entry) => entry.enabled !== false,
         ).length;
-        const llmCount = cronJobs.filter(
-          (entry) =>
-            (entry.messages || []).some(
-              (message) => message.contentType === "llm_generated",
-            ),
+        const llmCount = cronJobs.filter((entry) =>
+          (entry.messages || []).some(
+            (message) => message.contentType === "llm_generated",
+          ),
         ).length;
         const staticCount = cronJobs.length - llmCount;
 
@@ -5684,7 +6022,7 @@
         runtimeState = {
           ...state,
           cronJobs: (state.cronJobs || []).map((cronJob) =>
-            syncCronJobLegacyFields(cronJob)
+            syncCronJobLegacyFields(cronJob),
           ),
         };
         syncConfiguredTargetJid(state.settings?.defaultTargetJid || "");
@@ -6054,7 +6392,8 @@
           if (d.ok && d.contacts) {
             contacts = d.contacts;
             renderContacts();
-            if (runtimeState?.cronJobs?.length || draftCronJob) renderCronJobs();
+            if (runtimeState?.cronJobs?.length || draftCronJob)
+              renderCronJobs();
           }
         } catch (_) {}
       }

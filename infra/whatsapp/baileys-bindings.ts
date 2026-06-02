@@ -18,6 +18,7 @@ export interface WASocket {
     removeListener?: (event: string, handler: (...args: any[]) => void) => void
   }
   end: (input?: unknown) => void
+  logout?: () => Promise<void>
   sendMessage?: (jid: string, content: { text: string }) => Promise<unknown>
   groupFetchAllParticipating?: () => Promise<Record<string, { subject: string; id: string }>>
   waUploadToServer?: (...args: unknown[]) => Promise<unknown>

@@ -281,3 +281,39 @@ Deno.test("web-ui prefers websocket status and pauses background polling when hi
   assertStringIncludes(html, "if (document.hidden) return;");
   assertStringIncludes(html, "closeStatusSocket();");
 });
+
+Deno.test("web-ui exposes destructive WhatsApp unlink action in header with confirmation modal", async () => {
+  const html = await Deno.readTextFile(
+    new URL("../web-ui.html", import.meta.url),
+  );
+
+  assertStringIncludes(html, 'class="header-actions"');
+  assertStringIncludes(html, 'id="header-unlink-whatsapp-btn"');
+  assertStringIncludes(html, 'class="header-icon-button"');
+  assertStringIncludes(html, 'onclick="openUnlinkWhatsAppModal()"');
+  assertStringIncludes(html, 'id="unlink-whatsapp-modal"');
+  assertStringIncludes(html, 'id="unlink-whatsapp-title"');
+  assertStringIncludes(html, 'id="unlink-whatsapp-confirm-btn"');
+  assertStringIncludes(html, 'id="unlink-whatsapp-cancel-btn"');
+  assertStringIncludes(html, "Desvincular WhatsApp");
+  assertStringIncludes(html, "Desvincular");
+  assertStringIncludes(html, "Se cerrará la sesión actual de este equipo");
+  assertStringIncludes(html, "nuevo QR.");
+  assertStringIncludes(html, 'id="unlink-whatsapp-error"');
+  assertStringIncludes(html, 'currentSession?.phase !== "connected"');
+});
+
+Deno.test("web-ui opens unlink modal and posts to /api/whatsapp/unlink with loading reset", async () => {
+  const html = await Deno.readTextFile(
+    new URL("../web-ui.html", import.meta.url),
+  );
+
+  assertStringIncludes(html, 'document.getElementById("unlink-whatsapp-modal").style.display = "flex"');
+  assertStringIncludes(html, 'document.getElementById("unlink-whatsapp-modal").style.display = "none"');
+  assertStringIncludes(html, 'closeUnlinkWhatsAppModal()');
+  assertStringIncludes(html, 'await apiPost("/api/whatsapp/unlink")');
+  assertStringIncludes(html, 'unlinkWhatsAppError = "";');
+  assertStringIncludes(html, 'unlinkWhatsAppLoading = true;');
+  assertStringIncludes(html, 'unlinkWhatsAppLoading = false;');
+  assertStringIncludes(html, 'currentSession?.phase !== "connected"');
+});
