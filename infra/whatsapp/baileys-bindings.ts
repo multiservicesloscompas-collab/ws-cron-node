@@ -49,6 +49,27 @@ export interface BaileysBindings {
 let cachedBindings: BaileysBindings | null = null
 let cachedQRCode: QRCodeBindings | null = null
 
+const makeBaileysLogger = () => {
+  const logger = {
+    level: 'warn',
+    child: () => logger,
+    trace: () => undefined,
+    debug: () => undefined,
+    info: () => undefined,
+    warn: (...args: unknown[]) => {
+      console.warn('[Baileys]', ...args)
+    },
+    error: (...args: unknown[]) => {
+      console.error('[Baileys]', ...args)
+    },
+    fatal: (...args: unknown[]) => {
+      console.error('[Baileys]', ...args)
+    },
+  }
+
+  return logger
+}
+
 const createFilesystemAuthState = async (
   folder: string,
 ): Promise<ManagedWhatsAppAuthState> => {
@@ -142,7 +163,10 @@ export const loadDefaultBindings = async (): Promise<BaileysBindings> => {
 
   const mod = await import('baileys')
   cachedBindings = {
-    makeWASocket: (config) => mod.makeWASocket(config as never) as unknown as WASocket,
+    makeWASocket: (config) => mod.makeWASocket({
+      logger: makeBaileysLogger(),
+      ...config,
+    } as never) as unknown as WASocket,
     loadAuthState: createDefaultAuthState,
     DisconnectReason: mod.DisconnectReason,
   }

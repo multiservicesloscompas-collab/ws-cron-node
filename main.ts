@@ -245,8 +245,6 @@ const bootstrap = async () => {
     },
   });
 
-  _cronScheduler.startAll(initialRuntime);
-
   console.log("[5/6] Iniciando servidor web...");
   _messageStore = makeMessageStore();
   _messageStore.subscribe(() => {
@@ -333,8 +331,13 @@ const bootstrap = async () => {
   broadcastStatus();
 
   console.log("[6.1/6] Configurando servicios post-conexión...");
-  const sendMessage = makeSendMessage({ getSocket: _client.getSocket });
+  const sendMessage = makeSendMessage({
+    getSocket: _client.getSocket,
+    getConnectionStatus: _client.getConnectionStatus,
+  });
   _sendMessage = sendMessage;
+  _cronScheduler.startAll(initialRuntime);
+
   const findGroup = makeGroupFinder({
     getSocket: _client.getSocket,
     getConnectionStatus: _client.getConnectionStatus,

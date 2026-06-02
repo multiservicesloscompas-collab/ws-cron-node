@@ -17,9 +17,18 @@ import type { WASocket } from './make-whatsapp-client.ts'
  * const result = await sendMessage('123@g.us', 'Hola')
  */
 export const makeSendMessage = (
-  deps: { getSocket: () => WASocket | null },
+  deps: {
+    getSocket: () => WASocket | null
+    getConnectionStatus?: () => string
+  },
 ) =>
 async (jid: string, text: string): Promise<Result<void, string>> => {
+  const connectionStatus = deps.getConnectionStatus?.()
+
+  if (connectionStatus && connectionStatus !== 'open') {
+    return failure('WhatsApp no está conectado')
+  }
+
   const sock = deps.getSocket()
 
   if (!sock?.sendMessage) {

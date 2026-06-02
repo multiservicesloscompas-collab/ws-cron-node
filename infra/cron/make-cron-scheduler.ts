@@ -29,6 +29,12 @@ export interface CronScheduler {
 
 const CHECK_INTERVAL_MS = 30_000;
 const LLM_RETRY_DELAYS_MS = [2_000, 5_000, 8_000] as const;
+const AUTOMATIC_RETRY_WINDOW_MS = 3 * 60_000;
+
+interface PendingAutomaticRetry {
+  fireKey: string;
+  retryUntilMs: number;
+}
 
 const chooseFallbackMessage = (
   renderedMessage: Pick<RenderedCronMessage, "fallbackMessages">,
@@ -47,6 +53,8 @@ export const makeCronScheduler = (deps: CronSchedulerDeps): CronScheduler => {
   let checkInterval: ReturnType<typeof setInterval> | null = null;
   let currentState: CronRuntimeState | null = null;
   let lastFired = new Map<string, string>();
+  let inFlight = new Set<string>();
+  let pendingRetries = new Map<string, PendingAutomaticRetry>();
   const wait = deps.wait ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const random = deps.random ?? Math.random;
 
@@ -62,7 +70,7 @@ export const makeCronScheduler = (deps: CronSchedulerDeps): CronScheduler => {
       if (!isFailure(renderedResult)) return success(renderedResult.getValue());
 
       lastError = renderedResult.getError();
-      console.error(`[${label}] Intento ${attempt + 1} de LLM falló: ${lastError}`);
+      console.warn(`[${label}] Intento ${attempt + 1} de LLM falló: ${lastError}`);
 
       if (attempt < LLM_RETRY_DELAYS_MS.length) {
         await wait(LLM_RETRY_DELAYS_MS[attempt]);
@@ -127,23 +135,56 @@ export const makeCronScheduler = (deps: CronSchedulerDeps): CronScheduler => {
     if (!currentState) return;
 
     const zoned = getZonedDateParts(currentState.settings.timezone);
+    const nowMs = Date.now();
 
     for (const cronJob of currentState.cronJobs) {
       if (!cronJob.enabled) continue;
       if (!isDayMatch(cronJob.days, zoned.dayOfWeek)) continue;
-      if (cronJob.scheduleTime !== zoned.time) continue;
 
       const fireKey = `${zoned.date}-${cronJob.scheduleTime}`;
-      if (lastFired.get(cronJob.id) === fireKey) continue;
+      const pendingRetry = pendingRetries.get(cronJob.id);
+      const isScheduledMinute = cronJob.scheduleTime === zoned.time;
+      const isPendingRetry = pendingRetry?.fireKey === fireKey &&
+        pendingRetry.retryUntilMs >= nowMs;
 
-      lastFired.set(cronJob.id, fireKey);
-      await executeCronJob(cronJob, currentState.settings, `${cronJob.name} automático`);
+      if (pendingRetry && pendingRetry.retryUntilMs < nowMs) {
+        pendingRetries.delete(cronJob.id);
+      }
+
+      if (!isScheduledMinute && !isPendingRetry) continue;
+      if (lastFired.get(cronJob.id) === fireKey) continue;
+      const executionKey = `${cronJob.id}:${fireKey}`;
+      if (inFlight.has(executionKey)) continue;
+
+      inFlight.add(executionKey);
+
+      try {
+        const result = await executeCronJob(
+          cronJob,
+          currentState.settings,
+          `${cronJob.name} automático`,
+        );
+
+        if (!isFailure(result)) {
+          lastFired.set(cronJob.id, fireKey);
+          pendingRetries.delete(cronJob.id);
+        } else if (!pendingRetry) {
+          pendingRetries.set(cronJob.id, {
+            fireKey,
+            retryUntilMs: nowMs + AUTOMATIC_RETRY_WINDOW_MS,
+          });
+        }
+      } finally {
+        inFlight.delete(executionKey);
+      }
     }
   };
 
   const startAll = (state: CronRuntimeState): void => {
     currentState = state;
     lastFired = new Map();
+    inFlight = new Set();
+    pendingRetries = new Map();
 
     if (checkInterval) clearInterval(checkInterval);
     checkInterval = setInterval(tick, CHECK_INTERVAL_MS);
@@ -166,6 +207,8 @@ export const makeCronScheduler = (deps: CronSchedulerDeps): CronScheduler => {
 
     currentState = null;
     lastFired = new Map();
+    inFlight = new Set();
+    pendingRetries = new Map();
     console.log("CRON scheduler detenido");
   };
 
