@@ -1,0 +1,13 @@
+.atl
+node_modules
+auth_info
+config/
+.env
+.env.*
+!.env.example
+tmp
+.agents
+data
+coverage
+.DS_Store
+*.tsbuildinfo

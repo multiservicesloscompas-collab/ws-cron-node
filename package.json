@@ -1,0 +1,37 @@
+{
+  "name": "whatsapp-cron-manager-node",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#test-assert": "./types/test-assert.ts"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "dev": "node --env-file=.env --watch --import tsx ./main.ts",
+    "start": "node --env-file=.env --import tsx ./main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cacheable/node-cache": "^1.7.6",
+    "@google/genai": "^2.4.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "baileys": "7.0.0-rc11",
+    "pg": "^8.16.3",
+    "pg-mem": "^3.0.5",
+    "qrcode": "^1.5.4",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "@types/pg": "^8.20.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.6"
+  }
+}
